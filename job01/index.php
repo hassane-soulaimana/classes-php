@@ -11,16 +11,16 @@ class Product
     private DateTime $updatedAt;
     private ?int $category_id;
 
-    // Constructeur
+    // Constructeur (tous les paramètres sont optionnels pour permettre new Product())
     public function __construct(
-        ?int $id,
-        string $name,
-        array $photos,
-        int $price,
-        string $description,
-        int $quantity,
-        DateTime $createdAt,
-        DateTime $updatedAt,
+        ?int $id = null,
+        string $name = '',
+        array $photos = [],
+        int $price = 0,
+        string $description = '',
+        int $quantity = 0,
+        ?DateTime $createdAt = null,
+        ?DateTime $updatedAt = null,
         ?int $category_id = null
     ) {
         $this->id = $id;
@@ -29,8 +29,8 @@ class Product
         $this->price = $price;
         $this->description = $description;
         $this->quantity = $quantity;
-        $this->createdAt = $createdAt;
-        $this->updatedAt = $updatedAt;
+        $this->createdAt = $createdAt ?? new DateTime();
+        $this->updatedAt = $updatedAt ?? new DateTime();
         $this->category_id = $category_id;
     }
 
