@@ -10,8 +10,7 @@ class Product
     private DateTime $createdAt;
     private DateTime $updatedAt;
     private ?int $category_id;
-
-    // Constructeur (tous les paramètres sont optionnels pour permettre new Product())
+    
     public function __construct(
         ?int $id = null,
         string $name = '',
@@ -123,5 +122,63 @@ class Product
     public function setCategoryId(?int $category_id): void
     {
         $this->category_id = $category_id;
+    }
+
+    public function getCategory(): ?Category
+    {
+        if ($this->category_id === null) {
+            return null;
+        }
+
+        $host = 'localhost';
+        $user = 'root';
+        $pass = '';
+        $dbname = 'draft-shop';
+
+        $mysqli = new mysqli($host, $user, $pass, $dbname);
+        if ($mysqli->connect_errno) {
+            return null;
+        }
+
+        $stmt = $mysqli->prepare('SELECT id, name, description, created_at, updated_at FROM category WHERE id = ?');
+        $stmt->bind_param('i', $this->category_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($result->num_rows === 0) {
+            $stmt->close();
+            $mysqli->close();
+            return null;
+        }
+
+        $row = $result->fetch_assoc();
+
+        if (!class_exists('Category')) {
+            require_once __DIR__ . '/../job02/index.php';
+        }
+
+        try {
+            $createdAt = !empty($row['created_at']) ? new DateTime($row['created_at']) : new DateTime();
+        } catch (Exception $e) {
+            $createdAt = new DateTime();
+        }
+        try {
+            $updatedAt = !empty($row['updated_at']) ? new DateTime($row['updated_at']) : new DateTime();
+        } catch (Exception $e) {
+            $updatedAt = new DateTime();
+        }
+
+        $category = new Category(
+            isset($row['id']) ? (int)$row['id'] : null,
+            $row['name'] ?? '',
+            $row['description'] ?? '',
+            $createdAt,
+            $updatedAt
+        );
+
+        $stmt->close();
+        $mysqli->close();
+
+        return $category;
     }
 }
