@@ -10,7 +10,7 @@ class Product
     private DateTime $createdAt;
     private DateTime $updatedAt;
     private ?int $category_id;
-    
+
     public function __construct(
         ?int $id = null,
         string $name = '',
@@ -124,6 +124,7 @@ class Product
         $this->category_id = $category_id;
     }
 
+    // GetCategory
     public function getCategory(): ?Category
     {
         if ($this->category_id === null) {
@@ -180,5 +181,68 @@ class Product
         $mysqli->close();
 
         return $category;
+    }
+
+    // FinderoneByid
+    public static function findOneById(int $id)
+    {
+        $host = 'localhost';
+        $user = 'root';
+        $pass = '';
+        $dbname = 'draft-shop';
+
+        $mysqli = new mysqli($host, $user, $pass, $dbname);
+        if ($mysqli->connect_errno) {
+            return false;
+        }
+
+        $stmt = $mysqli->prepare('SELECT id, name, photos, price, description, quantity, created_at, updated_at, category_id FROM product WHERE id = ?');
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        if ($result->num_rows === 0) {
+            $stmt->close();
+            $mysqli->close();
+            return false;
+        }
+
+        $row = $result->fetch_assoc();
+
+        // photos JSON -> array
+        $photos = [];
+        if (!empty($row['photos'])) {
+            $decoded = json_decode($row['photos'], true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $photos = $decoded;
+            }
+        }
+
+        try {
+            $createdAt = !empty($row['created_at']) ? new DateTime($row['created_at']) : new DateTime();
+        } catch (Exception $e) {
+            $createdAt = new DateTime();
+        }
+        try {
+            $updatedAt = !empty($row['updated_at']) ? new DateTime($row['updated_at']) : new DateTime();
+        } catch (Exception $e) {
+            $updatedAt = new DateTime();
+        }
+
+        $product = new Product();
+        $product->setId(isset($row['id']) ? (int)$row['id'] : null);
+        $product->setName($row['name'] ?? '');
+        $product->setPhotos($photos);
+        $product->setPrice(isset($row['price']) ? (int)$row['price'] : 0);
+        $product->setDescription($row['description'] ?? '');
+        $product->setQuantity(isset($row['quantity']) ? (int)$row['quantity'] : 0);
+        $product->setCreatedAt($createdAt);
+        $product->setUpdatedAt($updatedAt);
+        $product->setCategoryId(array_key_exists('category_id', $row) && $row['category_id'] !== null ? (int)$row['category_id'] : null);
+
+        $stmt->close();
+        $mysqli->close();
+
+        return $product;
     }
 }
