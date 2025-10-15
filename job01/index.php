@@ -210,7 +210,7 @@ class Product
 
         $row = $result->fetch_assoc();
 
-        // photos JSON -> array
+        // photos
         $photos = [];
         if (!empty($row['photos'])) {
             $decoded = json_decode($row['photos'], true);
@@ -247,7 +247,7 @@ class Product
         return $product;
     }
 
-        // Récupère tous les produits et retourne un tableau d'instances Product
+    // TAbleau Array
     public static function findAll(): array
     {
         $host = 'localhost';
@@ -305,8 +305,55 @@ class Product
         $result->free();
         $mysqli->close();
         return $products;
-        
+    }
+                        // Fonction create 
+    public function create()
+    {
+        $host = 'localhost';
+        $user = 'root';
+        $pass = '';
+        $dbname = 'draft-shop';
+
+        $mysqli = new mysqli($host, $user, $pass, $dbname);
+        if ($mysqli->connect_errno) {
+            return false;
+        }
+
+        $sql = 'INSERT INTO product (name, photos, price, description, quantity, created_at, updated_at, category_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+        $stmt = $mysqli->prepare($sql);
+        if ($stmt === false) {
+            $mysqli->close();
+            return false;
+        }
+
+        $photosJson = json_encode($this->photos);
+        $createdAt = $this->createdAt instanceof DateTime ? $this->createdAt->format('Y-m-d H:i:s') : (new DateTime())->format('Y-m-d H:i:s');
+        $updatedAt = $this->updatedAt instanceof DateTime ? $this->updatedAt->format('Y-m-d H:i:s') : (new DateTime())->format('Y-m-d H:i:s');
+
+        $catId = $this->category_id;
+      
+        $name = $this->name;
+        $price = $this->price;
+        $description = $this->description;
+        $quantity = $this->quantity;
+
+       
+
+
+        $stmt->bind_param('ssisissi', $name, $photosJson, $price, $description, $quantity, $createdAt, $updatedAt, $catId);
+
+        $ok = $stmt->execute();
+        if (! $ok) {
+            $stmt->close();
+            $mysqli->close();
+            return false;
+        }
+
+        $this->id = $mysqli->insert_id;
+
+        $stmt->close();
+        $mysqli->close();
+
+        return $this;
     }
 }
-
-
