@@ -79,49 +79,58 @@ class Product
     }
 
     // Setters
-    public function setId(?int $id): void
+    public function setId(?int $id): self
     {
         $this->id = $id;
+        return $this;
     }
 
-    public function setName(string $name): void
+    public function setName(string $name): self
     {
         $this->name = $name;
+        return $this;
     }
 
-    public function setPhotos(array $photos): void
+    public function setPhotos(array $photos): self
     {
         $this->photos = $photos;
+        return $this;
     }
 
-    public function setPrice(int $price): void
+    public function setPrice(int $price): self
     {
         $this->price = $price;
+        return $this;
     }
 
-    public function setDescription(string $description): void
+    public function setDescription(string $description): self
     {
         $this->description = $description;
+        return $this;
     }
 
-    public function setQuantity(int $quantity): void
+    public function setQuantity(int $quantity): self
     {
         $this->quantity = $quantity;
+        return $this;
     }
 
-    public function setCreatedAt(DateTime $createdAt): void
+    public function setCreatedAt(DateTime $createdAt): self
     {
         $this->createdAt = $createdAt;
+        return $this;
     }
 
-    public function setUpdatedAt(DateTime $updatedAt): void
+    public function setUpdatedAt(DateTime $updatedAt): self
     {
         $this->updatedAt = $updatedAt;
+        return $this;
     }
 
-    public function setCategoryId(?int $category_id): void
+    public function setCategoryId(?int $category_id): self
     {
         $this->category_id = $category_id;
+        return $this;
     }
 
     // GetCategory
@@ -306,7 +315,7 @@ class Product
         $mysqli->close();
         return $products;
     }
-                        // Fonction create 
+    // Fonction create 
     public function create()
     {
         $host = 'localhost';
@@ -327,17 +336,17 @@ class Product
         }
 
         $photosJson = json_encode($this->photos);
-        $createdAt = $this->createdAt instanceof DateTime ? $this->createdAt->format('Y-m-d H:i:s') : (new DateTime())->format('Y-m-d H:i:s');
-        $updatedAt = $this->updatedAt instanceof DateTime ? $this->updatedAt->format('Y-m-d H:i:s') : (new DateTime())->format('Y-m-d H:i:s');
+        // Ne pas modifier created_at lors d'un update ; forcer updated_at à maintenant
+        $updatedAt = (new DateTime())->format('Y-m-d H:i:s');
 
         $catId = $this->category_id;
-      
+
         $name = $this->name;
         $price = $this->price;
         $description = $this->description;
         $quantity = $this->quantity;
 
-       
+
 
 
         $stmt->bind_param('ssisissi', $name, $photosJson, $price, $description, $quantity, $createdAt, $updatedAt, $catId);
@@ -355,5 +364,59 @@ class Product
         $mysqli->close();
 
         return $this;
+    }
+
+    public function update()
+    {
+        // Very simple update: update basic fields for the current product id.
+        // Returns true on success, false on failure.
+        if ($this->id === null) {
+            return false;
+        }
+
+        $host = 'localhost';
+        $user = 'root';
+        $pass = '';
+        $dbname = 'draft-shop';
+
+        $mysqli = new mysqli($host, $user, $pass, $dbname);
+        if ($mysqli->connect_errno) {
+            return false;
+        }
+
+        // Update only simple columns to keep the method easy to understand
+        $sql = 'UPDATE product SET name = ?, price = ?, description = ?, quantity = ?, updated_at = ? WHERE id = ?';
+        $stmt = $mysqli->prepare($sql);
+        if ($stmt === false) {
+            $mysqli->close();
+            return false;
+        }
+
+        $name = $this->name;
+        $price = $this->price;
+        $description = $this->description;
+        $quantity = $this->quantity;
+        $updatedAt = (new DateTime())->format('Y-m-d H:i:s');
+        $id = $this->id;
+
+        // types: s (string), i (integer), s (string), i (integer), s (string), i (integer)
+        $types = 'sisisi';
+        $ok = $stmt->bind_param($types, $name, $price, $description, $quantity, $updatedAt, $id);
+        if ($ok === false) {
+            $stmt->close();
+            $mysqli->close();
+            return false;
+        }
+
+        if ($stmt->execute() === false) {
+            $stmt->close();
+            $mysqli->close();
+            return false;
+        }
+
+        $stmt->close();
+        $mysqli->close();
+
+        return true;
     }
 }
