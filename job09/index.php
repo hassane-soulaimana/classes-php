@@ -22,10 +22,12 @@ $product->setCreatedAt(new DateTime());
 $product->setUpdatedAt(new DateTime());
 $product->setCategoryId(2);
 
-$result = $product->create();
+$res = $product->create();
 
-if ($result === false) {
+if ($res === false) {
     echo "Erreur lors de l'insertion du produit.";
 } else {
-    echo "Produit inséré avec id=" . htmlspecialchars((string)$result->getId(), ENT_QUOTES, 'UTF-8');
+    // Product::create() returns the Product instance on success.
+    // Use the original $product (which now has its id set) to avoid analyzer warnings.
+    echo "Produit inséré avec id=" . htmlspecialchars((string)$product->getId(), ENT_QUOTES, 'UTF-8');
 }
