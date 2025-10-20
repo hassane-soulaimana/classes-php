@@ -1,7 +1,8 @@
 <?php
 require_once __DIR__ . '/..//job01/index.php';
+require_once __DIR__ . '/../job14/SockableInterface.php';
 
-class Electronic extends Product
+class Electronic extends Product implements SockableInterface
 {
     private string $brand;
     private int $waranty_fee;
@@ -187,5 +188,21 @@ class Electronic extends Product
         $stmt->close();
         $mysqli->close();
         return $ok !== false;
+    }
+
+    // Stock management
+    public function addStocks(int $stock): self
+    {
+        if ($stock <= 0) return $this;
+        $this->setQuantity($this->getQuantity() + $stock);
+        return $this;
+    }
+
+    public function removeStocks(int $stock): self
+    {
+        if ($stock <= 0) return $this;
+        $new = $this->getQuantity() - $stock;
+        $this->setQuantity($new < 0 ? 0 : $new);
+        return $this;
     }
 }
