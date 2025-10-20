@@ -1,15 +1,15 @@
 <?php
-class Product
+abstract class AbstractProduct
 {
-    private ?int $id;
-    private string $name;
-    private array $photos;
-    private int $price;
-    private string $description;
-    private int $quantity;
-    private DateTime $createdAt;
-    private DateTime $updatedAt;
-    private ?int $category_id;
+    protected ?int $id;
+    protected string $name;
+    protected array $photos;
+    protected int $price;
+    protected string $description;
+    protected int $quantity;
+    protected DateTime $createdAt;
+    protected DateTime $updatedAt;
+    protected ?int $category_id;
 
     public function __construct(
         ?int $id = null,
@@ -194,6 +194,18 @@ class Product
 
 
     // FinderoneByid
+    abstract public static function findOneById(int $id);
+
+    // TAbleau Array
+    abstract public static function findAll(): array;
+    // Fonction create 
+    abstract public function create();
+
+    abstract public function update();
+}
+
+class Product extends AbstractProduct
+{
     public static function findOneById(int $id)
     {
         $host = 'localhost';
@@ -256,7 +268,6 @@ class Product
         return $product;
     }
 
-    // TAbleau Array
     public static function findAll(): array
     {
         $host = 'localhost';
@@ -315,7 +326,7 @@ class Product
         $mysqli->close();
         return $products;
     }
-    // Fonction create 
+
     public function create()
     {
         $host = 'localhost';
@@ -336,7 +347,8 @@ class Product
         }
 
         $photosJson = json_encode($this->photos);
-        // Ne pas modifier created_at lors d'un update ; forcer updated_at à maintenant
+        // Use existing createdAt if set, otherwise now
+        $createdAt = $this->createdAt instanceof DateTime ? $this->createdAt->format('Y-m-d H:i:s') : (new DateTime())->format('Y-m-d H:i:s');
         $updatedAt = (new DateTime())->format('Y-m-d H:i:s');
 
         $catId = $this->category_id;
@@ -345,9 +357,6 @@ class Product
         $price = $this->price;
         $description = $this->description;
         $quantity = $this->quantity;
-
-
-
 
         $stmt->bind_param('ssisissi', $name, $photosJson, $price, $description, $quantity, $createdAt, $updatedAt, $catId);
 
@@ -368,8 +377,6 @@ class Product
 
     public function update()
     {
-        // Very simple update: update basic fields for the current product id.
-        // Returns true on success, false on failure.
         if ($this->id === null) {
             return false;
         }
@@ -384,7 +391,6 @@ class Product
             return false;
         }
 
-        // Update only simple columns to keep the method easy to understand
         $sql = 'UPDATE product SET name = ?, price = ?, description = ?, quantity = ?, updated_at = ? WHERE id = ?';
         $stmt = $mysqli->prepare($sql);
         if ($stmt === false) {
@@ -398,8 +404,6 @@ class Product
         $quantity = $this->quantity;
         $updatedAt = (new DateTime())->format('Y-m-d H:i:s');
         $id = $this->id;
-
-        // types: s (string), i (integer), s (string), i (integer), s (string), i (integer)
         $types = 'sisisi';
         $ok = $stmt->bind_param($types, $name, $price, $description, $quantity, $updatedAt, $id);
         if ($ok === false) {
